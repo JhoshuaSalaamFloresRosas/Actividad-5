@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model State {
+  id    Int     @id @default(autoincrement())
+  name  String @db.VarChar(128)
+  //un estado tiene varias cidudades/municipios
+  cities City[]
+}
+
+model City {
+  id    Int     @id @default(autoincrement())
+  name  String @db.VarChar(128)
+  locations Location[]
+  //relacion con State 
+  state State @relation(fields: [stateId], references: [id]) 
+  stateId Int
+  
+}
+
+model Location {
+  id    Int     @id @default(autoincrement())
+  name  String @db.VarChar(128)
+  address Address[]
+  //relacion con City 
+  city City @relation(fields: [cityId], references: [id]) 
+  cityId Int
+  
+}
+
+model Client {
+  id    Int     @id @default(autoincrement())
+  name  String @db.VarChar(50)
+  lastName  String @db.VarChar(100)
+  RFC  String? @db.VarChar(100)
+  address Address[]
+  email  String? @db.VarChar(128)
+  phone  String? @db.VarChar(100)
+  status Boolean @default(true)
+  
+  
+}
+
+model Address {
+  id    Int     @id @default(autoincrement())
+  street  String @db.VarChar(128)
+  outNum  String? @db.VarChar(10)
+  intNum  String? @db.VarChar(10)
+  zipCode  String @db.VarChar(5)
+
+  //relacion con client 
+  client Client @relation(fields: [clientId], references: [id]) 
+  clientId Int
+
+   //relacion con location 
+  location Location @relation(fields: [locationId], references: [id]) 
+  locationId Int
+}
