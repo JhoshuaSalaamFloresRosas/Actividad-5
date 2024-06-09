@@ -1,1 +1,4 @@
-export class CreateCityDto {}
+export class CreateCityDto {
+    name: string
+    stateId: number
+}
