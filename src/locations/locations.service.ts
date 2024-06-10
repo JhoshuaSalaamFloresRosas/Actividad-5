@@ -20,8 +20,12 @@ export class LocationsService {
     return this.prisma.location.findFirst({
       where: {
         name,
-        cityId
-      }
+        cityId: cityId,
+        OR: [
+          { name: name },
+          { name: { equals: name, mode: 'insensitive' } }
+        ]
+      },
     });
   }
 
@@ -127,6 +131,7 @@ export class LocationsService {
     });
   }
 
+  // Función para eliminar
   async remove(id: number): Promise<Location> {
     // Validar que la localidad existe
     await this.byId(id);
