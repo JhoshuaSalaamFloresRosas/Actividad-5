@@ -9,38 +9,53 @@ export class StatesService {
 
   //instancia de prisma
   constructor(private prisma: PrismaService) {}
-  /**
-   * Funcion para buscar estado por nombre y sin importar acentos
-   * @param name 
+ /**
+   * Normaliza una cadena eliminando acentos y convirtiendo a minúsculas.
+   * @param str 
    * @returns 
    */
-  async findByName(name: string): Promise<State | null> {
-    return this.prisma.state.findFirst({
-      where: {
-        OR: [
-          { name: name },
-          { name: { equals: name, mode: 'insensitive' } }
-        ]
-      },
-    });
-  }
+ normalizeString(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
-  /**
-   * Funcion para crear estado
-   * @param data 
-   * @returns 
-   */
-  async create(data: Prisma.StateCreateInput): Promise<State> {
-    //Verificar si existe el estado
-    const existingState = await this.findByName(data.name);
-    if (existingState) {
-      throw new NotFoundException('No se debe permitir crear un estado que ya exista');
+/**
+ * Función para buscar estado por nombre y sin importar acentos
+ * @param name 
+ * @returns 
+ */
+async findByName(name: string): Promise<State | null> {
+  const normalized_name = this.normalizeString(name);
+
+  const states = await this.prisma.state.findMany({
+    where: {
+      OR: [
+        { name: { equals: name, mode: 'insensitive' } },
+        { name: { equals: normalized_name, mode: 'insensitive' } }
+      ]
     }
-    
-    return this.prisma.state.create({
-      data,
-    });
+  });
+
+  return states.find(state => this.normalizeString(state.name) === normalized_name) || null;
+}
+
+/**
+ * Función para crear estado
+ * @param data 
+ * @returns 
+ */
+async create(data: Prisma.StateCreateInput): Promise<State> {
+  const normalized_name = this.normalizeString(data.name);
+
+  // Verificar si existe el estado
+  const existingState = await this.findByName(normalized_name);
+  if (existingState) {
+    throw new NotFoundException('Ese estado ya existe');
   }
+  
+  return this.prisma.state.create({
+    data,
+  });
+}
 
   /**
    * Funcion para mostrar todos
@@ -91,24 +106,33 @@ export class StatesService {
     return project;
   }
 
-  async update(id: number, updateStateDto: UpdateStateDto): Promise<State> {
-    // validar que el estado existe
-    await this.byId(id);
-    // validar que el nombre no exista
-    const existingState = await this.findByName(updateStateDto.name);
-    // Si existe un estado con el nombre proporcionado
-    if (existingState) {
-      throw new NotFoundException('Ese estado ya existe');
-    }
+    /**
+   * Función para actualizar un estado
+   * @param id 
+   * @param updateStateDto 
+   * @returns 
+   */
+    async update(id: number, updateStateDto: UpdateStateDto): Promise<State> {
+      // Validar que el estado existe
+      const state = await this.byId(id);
     
-    
-    return this.prisma.state.update({
-      data: updateStateDto,
-      where: {
-        id
+      // Validar que el nombre no exista
+      if (updateStateDto.name) {
+        const normalized_name = this.normalizeString(updateStateDto.name);
+        const existingState = await this.findByName(normalized_name);
+        // Si existe un estado con el nombre proporcionado y su id es diferente al del estado que se está actualizando
+        if (existingState && existingState.id !== id) {
+          throw new NotFoundException('Ese estado ya existe');
+        }
       }
-    });
-  }
+    
+      return this.prisma.state.update({
+        data: updateStateDto,
+        where: {
+          id
+        }
+      });
+    }
 
   async remove(id: number): Promise<State> {
     // Validar que el estado existe
