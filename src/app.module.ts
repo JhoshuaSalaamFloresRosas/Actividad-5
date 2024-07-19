@@ -6,9 +6,10 @@ import { CitiesModule } from './cities/cities.module';
 import { LocationsModule } from './locations/locations.module';
 import { ClientsModule } from './clients/clients.module';
 import { AddressesModule } from './addresses/addresses.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [StatesModule, CitiesModule, LocationsModule, ClientsModule, AddressesModule],
+  imports: [ConfigModule.forRoot({isGlobal: true}),StatesModule, CitiesModule, LocationsModule, ClientsModule, AddressesModule],
   controllers: [AppController],
   providers: [AppService],
 })
