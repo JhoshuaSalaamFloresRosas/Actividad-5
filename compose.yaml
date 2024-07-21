@@ -1,0 +1,26 @@
+
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    shm_size: 128mb
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - './pg-data:/var/lib/postgresql/data'
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+
